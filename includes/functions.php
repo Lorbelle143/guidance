@@ -65,7 +65,8 @@ function getFlash() {
  * Check if user is authenticated
  */
 function isAuthenticated() {
-    return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
+    return (isset($_SESSION['user_id']) || isset($_SESSION['student_id'])) &&
+           (isset($_SESSION['user_type']) && !empty($_SESSION['user_type']));
 }
 
 /**
@@ -73,7 +74,17 @@ function isAuthenticated() {
  */
 function requireAuth() {
     if (!isAuthenticated()) {
-        redirect('../auth/login.php');
+        if (isStudent()) {
+            redirect('../auth/student_login.php');
+        } else {
+            redirect('../auth/admin_login.php');
+        }
+    }
+    
+    // Redirect students to student dashboard if they try to access admin pages
+    if (isStudent() && strpos($_SERVER['PHP_SELF'], '/admin/') !== false && 
+        strpos($_SERVER['PHP_SELF'], '/student/') === false) {
+        redirect('../student/student_dashboard.php');
     }
 }
 
@@ -151,3 +162,50 @@ function uploadFile($file) {
 function formatDate($date, $format = 'Y-m-d H:i:s') {
     return date($format, strtotime($date));
 }
+
+/**
+ * Check if user is admin
+ */
+function isAdmin() {
+    return isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
+}
+
+/**
+ * Require admin role
+ */
+function requireAdmin() {
+    if (!isAuthenticated()) {
+        setFlash('error', 'Please login to access this page.');
+        redirect('../auth/admin_login.php');
+    }
+    
+    if (!isAdmin()) {
+        setFlash('error', 'Access denied. Admin privileges required.');
+        redirect('../admin/admin_dashboard.php');
+    }
+}
+
+/**
+ * Check if user is student
+ */
+function isStudent() {
+    return isset($_SESSION['user_type']) && $_SESSION['user_type'] === 'student';
+}
+
+/**
+ * Require student role
+ */
+function requireStudent() {
+    if (!isAuthenticated() || !isStudent()) {
+        setFlash('error', 'Access denied. Student login required.');
+        redirect('../auth/student_login.php');
+    }
+}
+
+/**
+ * Get user type
+ */
+function getUserType() {
+    return $_SESSION['user_type'] ?? 'guest';
+}
+

@@ -5,10 +5,10 @@ if (!defined('SESSION_LIFETIME')) {
 }
 ?>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+<nav class="navbar navbar-expand-lg navbar-dark bg-success shadow-sm">
     <div class="container-fluid">
-        <a class="navbar-brand" href="../admin/admin_dashboard.php">
-            <i class="bi bi-journal-medical"></i> Guidance Inventory System
+        <a class="navbar-brand" href="../student/student_dashboard.php">
+            <i class="bi bi-journal-medical"></i> Student Portal
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
@@ -16,40 +16,27 @@ if (!defined('SESSION_LIFETIME')) {
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item">
-                    <a class="nav-link" href="../admin/admin_dashboard.php">
+                    <a class="nav-link" href="../student/student_dashboard.php">
                         <i class="bi bi-house-door"></i> Dashboard
                     </a>
                 </li>
-                <?php if (isAdmin()): ?>
                 <li class="nav-item">
-                    <a class="nav-link" href="../admin/add_student.php">
-                        <i class="bi bi-person-plus"></i> Add Student
+                    <a class="nav-link" href="../student/upload_document.php">
+                        <i class="bi bi-file-earmark-arrow-up"></i> Upload Documents
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="../admin/scan_qr.php">
-                        <i class="bi bi-qr-code-scan"></i> Scan QR
+                    <a class="nav-link" href="../student/profile.php">
+                        <i class="bi bi-person-circle"></i> My Profile
                     </a>
                 </li>
-                <?php endif; ?>
-                <li class="nav-item">
-                    <a class="nav-link" href="../admin/view_students.php">
-                        <i class="bi bi-people"></i> View Students
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="../admin/view_documents.php">
-                        <i class="bi bi-files"></i> Student Documents
-                    </a>
-                </li>
-                <?php if (isAdmin()): ?>
-                <?php endif; ?>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                        <i class="bi bi-person-circle"></i> <?php echo sanitize($_SESSION['username'] ?? 'Admin'); ?>
-                        <span class="badge bg-warning text-dark">Admin</span>
+                        <i class="bi bi-person-badge"></i> <?php echo sanitize($_SESSION['student_number'] ?? 'Student'); ?>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="../student/change_password.php"><i class="bi bi-key"></i> Change Password</a></li>
+                        <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="../auth/logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
                     </ul>
                 </li>

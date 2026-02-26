@@ -1,16 +1,21 @@
 <?php
 /**
- * Login Page
+ * Student Login Page
  */
+require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/../includes/functions.php';
 
 // Redirect if already logged in
 if (isAuthenticated()) {
-    redirect('../admin/dashboard.php');
+    if (isStudent()) {
+        redirect('../student/student_dashboard.php');
+    } else {
+        redirect('../admin/admin_dashboard.php');
+    }
 }
 
-$pageTitle = 'Login - Guidance Office System';
+$pageTitle = 'Student Login - Guidance Office System';
 require_once __DIR__ . '/../includes/header.php';
 ?>
 
@@ -18,9 +23,9 @@ require_once __DIR__ . '/../includes/header.php';
     <div class="card shadow-lg" style="width: 450px;">
         <div class="card-body p-5">
             <div class="text-center mb-4">
-                <i class="bi bi-journal-medical text-primary" style="font-size: 3rem;"></i>
-                <h3 class="mt-3">Guidance Office System</h3>
-                <p class="text-muted">Sign in to your account</p>
+                <i class="bi bi-person-badge text-success" style="font-size: 3rem;"></i>
+                <h3 class="mt-3">Student Portal</h3>
+                <p class="text-muted">Sign in to access your information</p>
             </div>
 
             <?php
@@ -34,15 +39,15 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
             <?php endif; ?>
 
-            <form action="login_process.php" method="POST">
+            <form action="student_login_process.php" method="POST">
                 <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                 
                 <div class="mb-3">
-                    <label for="username" class="form-label">Username</label>
+                    <label for="student_id" class="form-label">Student ID</label>
                     <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-person"></i></span>
-                        <input type="text" name="username" id="username" class="form-control" 
-                               placeholder="Enter username" required autofocus>
+                        <span class="input-group-text"><i class="bi bi-person-vcard"></i></span>
+                        <input type="text" name="student_id" id="student_id" class="form-control" 
+                               placeholder="Enter your Student ID" required autofocus>
                     </div>
                 </div>
 
@@ -55,10 +60,24 @@ require_once __DIR__ . '/../includes/header.php';
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary w-100 py-2">
+                <button type="submit" class="btn btn-success w-100 py-2 mb-3">
                     <i class="bi bi-box-arrow-in-right"></i> Sign In
                 </button>
+
+                <div class="text-center">
+                    <p class="mb-0">Don't have an account? 
+                        <a href="student_register.php" class="text-decoration-none fw-bold">Register here</a>
+                    </p>
+                </div>
             </form>
+
+            <hr class="my-4">
+            
+            <div class="text-center">
+                <a href="../index.php" class="text-decoration-none">
+                    <i class="bi bi-arrow-left"></i> Back to Home
+                </a>
+            </div>
         </div>
     </div>
 </div>

@@ -2,8 +2,12 @@
 /**
  * Logout Handler
  */
+require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/../includes/functions.php';
+
+// Check user type before clearing session
+$isStudent = isset($_SESSION['user_type']) && $_SESSION['user_type'] === 'student';
 
 // Clear all session data
 $_SESSION = [];
@@ -20,4 +24,9 @@ session_destroy();
 session_start();
 setFlash('success', 'You have been logged out successfully.');
 
-redirect('login.php');
+// Redirect based on user type
+if ($isStudent) {
+    redirect('student_login.php');
+} else {
+    redirect('admin_login.php');
+}

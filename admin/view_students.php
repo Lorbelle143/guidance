@@ -64,9 +64,11 @@ try {
             <p class="text-muted">Total: <?php echo number_format($totalRecords); ?> students</p>
         </div>
         <div class="col-md-6 text-end">
+            <?php if (isAdmin()): ?>
             <a href="add_student.php" class="btn btn-success">
                 <i class="bi bi-person-plus"></i> Add New Student
             </a>
+            <?php endif; ?>
             <a href="export_pdf.php<?php echo !empty($search) ? '?search=' . urlencode($search) : ''; ?>" 
                class="btn btn-warning" target="_blank">
                 <i class="bi bi-file-pdf"></i> Export PDF
@@ -118,7 +120,9 @@ try {
                             <th>Name</th>
                             <th>Email</th>
                             <th>Date Added</th>
+                            <?php if (isAdmin()): ?>
                             <th>Actions</th>
+                            <?php endif; ?>
                         </tr>
                     </thead>
                     <tbody>
@@ -146,6 +150,7 @@ try {
                             </td>
                             <td><?php echo htmlspecialchars($student['email'] ?? 'N/A'); ?></td>
                             <td><?php echo date('M d, Y', strtotime($student['created_at'])); ?></td>
+                            <?php if (isAdmin()): ?>
                             <td>
                                 <a href="edit_student.php?id=<?php echo $student['id']; ?>" 
                                    class="btn btn-sm btn-primary" title="Edit">
@@ -157,6 +162,7 @@ try {
                                     <i class="bi bi-trash"></i>
                                 </a>
                             </td>
+                            <?php endif; ?>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>

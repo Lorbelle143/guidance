@@ -1,22 +1,30 @@
 <?php
 /**
- * Save Student Handler
+ * Student Registration Process Handler
  */
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/../includes/functions.php';
 
-requireAdmin(); // Only admins can save students
+// Check if already logged in
+if (isAuthenticated()) {
+    if (isStudent()) {
+        redirect('../student/student_dashboard.php');
+    } else {
+        redirect('../admin/admin_dashboard.php');
+    }
+}
 
 // Validate request method
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    redirect('../admin/add_student.php');
+    redirect('student_register.php');
 }
 
 // Verify CSRF token
 if (!isset($_POST['csrf_token']) || !verifyCSRFToken($_POST['csrf_token'])) {
     setFlash('error', 'Invalid request. Please try again.');
-    redirect('../admin/add_student.php');
+    redirect('student_register.php');
 }
 
 // Validate and sanitize input
@@ -26,6 +34,7 @@ $first_name = sanitize($_POST['first_name'] ?? '');
 $middle_name = sanitize($_POST['middle_name'] ?? '');
 $email = sanitize($_POST['email'] ?? '');
 $password = $_POST['password'] ?? '';
+$confirm_password = $_POST['confirm_password'] ?? '';
 
 $errors = [];
 
@@ -48,6 +57,10 @@ if (empty($password)) {
     $errors[] = "Password must be at least 6 characters.";
 }
 
+if ($password !== $confirm_password) {
+    $errors[] = "Passwords do not match.";
+}
+
 // Validate email if provided
 if (!empty($email) && !validateEmail($email)) {
     $errors[] = "Invalid email format.";
@@ -66,7 +79,7 @@ if (!isset($_FILES['photo']) || $_FILES['photo']['error'] === UPLOAD_ERR_NO_FILE
 // If there are validation errors, redirect back
 if (!empty($errors)) {
     setFlash('error', implode('<br>', $errors));
-    redirect('../admin/add_student.php');
+    redirect('student_register.php');
 }
 
 try {
@@ -77,8 +90,19 @@ try {
     $checkStmt->execute([$student_id]);
     
     if ($checkStmt->fetch()) {
-        setFlash('error', 'Student ID already exists.');
-        redirect('../admin/add_student.php');
+        setFlash('error', 'Student ID already exists. Please use a different Student ID or contact the guidance office.');
+        redirect('student_register.php');
+    }
+    
+    // Check if email already exists (if provided)
+    if (!empty($email)) {
+        $checkEmailStmt = $db->prepare("SELECT id FROM students WHERE email = ?");
+        $checkEmailStmt->execute([$email]);
+        
+        if ($checkEmailStmt->fetch()) {
+            setFlash('error', 'Email already registered. Please use a different email.');
+            redirect('student_register.php');
+        }
     }
     
     // Upload file
@@ -86,7 +110,7 @@ try {
     
     if (!$uploadResult['success']) {
         setFlash('error', implode('<br>', $uploadResult['errors']));
-        redirect('../admin/add_student.php');
+        redirect('student_register.php');
     }
     
     $filename = $uploadResult['filename'];
@@ -96,8 +120,8 @@ try {
     
     // Insert student record
     $stmt = $db->prepare("
-        INSERT INTO students (student_id, password, last_name, first_name, middle_name, email, photo, is_active, created_by, created_at) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, NOW())
+        INSERT INTO students (student_id, password, last_name, first_name, middle_name, email, photo, is_active, created_at) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW())
     ");
     
     $stmt->execute([
@@ -107,21 +131,20 @@ try {
         $first_name,
         $middle_name,
         $email,
-        $filename,
-        $_SESSION['user_id']
+        $filename
     ]);
     
-    setFlash('success', 'Student record added successfully.');
-    redirect('../admin/view_students.php');
+    setFlash('success', 'Registration successful! You can now login with your Student ID and password.');
+    redirect('student_login.php');
     
 } catch (PDOException $e) {
-    error_log("Save student error: " . $e->getMessage());
+    error_log("Student registration error: " . $e->getMessage());
     
     // Delete uploaded file if database insert fails
     if (isset($filename) && file_exists(UPLOAD_PATH . $filename)) {
         unlink(UPLOAD_PATH . $filename);
     }
     
-    setFlash('error', 'An error occurred while saving the student record.');
-    redirect('../admin/add_student.php');
+    setFlash('error', 'An error occurred during registration. Please try again later.');
+    redirect('student_register.php');
 }

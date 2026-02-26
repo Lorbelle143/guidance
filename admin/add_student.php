@@ -6,7 +6,7 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/../includes/functions.php';
 
-requireAuth();
+requireAdmin(); // Only admins can add students
 
 $pageTitle = 'Add Student - Guidance Office System';
 require_once __DIR__ . '/../includes/header.php';
@@ -57,6 +57,13 @@ require_once __DIR__ . '/../includes/navbar.php';
                             <label for="middle_name" class="form-label">Middle Name</label>
                             <input type="text" name="middle_name" id="middle_name" class="form-control" 
                                    placeholder="Enter middle name (optional)">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Default Password <span class="text-danger">*</span></label>
+                            <input type="password" name="password" id="password" class="form-control" 
+                                   placeholder="Set default password" required minlength="6">
+                            <small class="text-muted">Student will use this to login initially</small>
                         </div>
 
                         <div class="mb-3">

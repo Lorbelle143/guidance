@@ -6,7 +6,7 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/../includes/functions.php';
 
-requireAuth();
+requireAdmin(); // Only admins can update students
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     redirect('../admin/view_students.php');

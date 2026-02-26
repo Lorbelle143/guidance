@@ -4,8 +4,14 @@ A professional student management system for guidance offices with secure authen
 
 ## Features
 
-- Secure user authentication with password hashing
+- Secure authentication with master key for admin
+- Student self-registration with photo upload
+- Separate login pages for Admin and Students
+- Student login with Student ID
+- Separate dashboards for Admin and Students
 - Student record management (Add, Edit, Delete, View)
+- QR code generation for students
+- QR code scanner for quick student lookup
 - Photo upload with validation
 - Search and pagination
 - PDF export functionality
@@ -59,12 +65,17 @@ A professional student management system for guidance offices with secure authen
    http://localhost/your-project-folder/
    ```
 
-## Default Login
+## Default Login Credentials
 
-- Username: `admin`
-- Password: `admin123`
+### Master Admin (Only Admin Access)
+- Master Key: `GuidanceAdmin2024!`
+- **CRITICAL:** Change the master key in `config/master_key.php` immediately!
 
-**IMPORTANT:** Change the default password immediately after first login!
+### Students
+- Students can self-register through the Student Portal
+- Or admins can create student accounts with default passwords
+
+**IMPORTANT:** Change the master key immediately after installation!
 
 ## Security Features
 
@@ -93,12 +104,32 @@ A professional student management system for guidance offices with secure authen
 
 ## Usage
 
-### Adding Students
+### Student Registration
+1. Go to Student Portal from home page
+2. Click "Register here" on the login page
+3. Fill in your information:
+   - Student ID (unique identifier)
+   - Personal information (name, email)
+   - Upload your photo
+   - Create a password
+4. Submit registration
+5. Login with your Student ID and password
+
+### Student Features
+- View personal information
+- Generate QR code with your data
+- Download/Print QR code
+- Show QR code to guidance office for quick access
+- Change password
+
+### Admin Features
+### Admin Features
 1. Navigate to Dashboard
 2. Click "Add New Student"
 3. Fill in student information
 4. Upload photo (JPG, PNG, or GIF, max 5MB)
-5. Click "Save Student"
+5. Set default password for student
+6. Click "Save Student"
 
 ### Viewing Students
 - View all students with pagination

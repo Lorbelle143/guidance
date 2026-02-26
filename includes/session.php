@@ -3,6 +3,9 @@
  * Session Management
  */
 
+// Load configuration first
+require_once __DIR__ . '/../config/config.php';
+
 // Secure session configuration
 ini_set('session.cookie_httponly', 1);
 ini_set('session.use_only_cookies', 1);
