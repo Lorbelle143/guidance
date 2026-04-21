@@ -1,6 +1,8 @@
 .env
+config/env.php
 /uploads/*
 !/uploads/.htaccess
+!/uploads/documents/.htaccess
 /vendor/
 composer.lock
 *.log

@@ -26,7 +26,7 @@ setFlash('success', 'You have been logged out successfully.');
 
 // Redirect based on user type
 if ($isStudent) {
-    redirect('student_login.php');
+    redirect('login.php');
 } else {
-    redirect('admin_login.php');
+    redirect('login.php');
 }

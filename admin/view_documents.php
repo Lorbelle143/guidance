@@ -1,215 +1,136 @@
 <?php
-/**
- * Admin View All Student Documents
- */
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../includes/session.php';
-require_once __DIR__ . '/../includes/functions.php';
-
+require_once __DIR__.'/../config/database.php';
+require_once __DIR__.'/../includes/session.php';
+require_once __DIR__.'/../includes/functions.php';
 requireAuth();
+$pageTitle = 'Documents - NBSC GCO';
+require_once __DIR__.'/../includes/header.php';
 
-$pageTitle = 'Student Documents - Guidance Office System';
-require_once __DIR__ . '/../includes/header.php';
-require_once __DIR__ . '/../includes/navbar.php';
+$search  = sanitize($_GET['search'] ?? '');
+$docType = sanitize($_GET['doc_type'] ?? '');
 
-// Get all documents sorted by student name
 try {
     $db = getDB();
-    
-    // Search functionality
-    $search = isset($_GET['search']) ? sanitize($_GET['search']) : '';
-    $docType = isset($_GET['doc_type']) ? sanitize($_GET['doc_type']) : '';
-    
-    $whereClause = '';
-    $params = [];
-    
-    if (!empty($search)) {
-        $whereClause = "WHERE (s.student_id LIKE ? OR s.last_name LIKE ? OR s.first_name LIKE ?)";
-        $searchParam = "%{$search}%";
-        $params = [$searchParam, $searchParam, $searchParam];
-    }
-    
-    if (!empty($docType)) {
-        $whereClause .= ($whereClause ? ' AND ' : 'WHERE ') . "sd.document_type = ?";
-        $params[] = $docType;
-    }
-    
-    $stmt = $db->prepare("
-        SELECT sd.*, s.student_id, s.first_name, s.last_name, s.middle_name
-        FROM student_documents sd
-        INNER JOIN students s ON sd.student_id = s.id
-        {$whereClause}
-        ORDER BY s.last_name, s.first_name, sd.uploaded_at DESC
-    ");
+    $where = []; $params = [];
+    if ($search) { $where[] = "(s.student_id LIKE ? OR s.last_name LIKE ? OR s.first_name LIKE ?)"; $p = "%$search%"; $params = array_merge($params,[$p,$p,$p]); }
+    if ($docType) { $where[] = "sd.document_type = ?"; $params[] = $docType; }
+    $wClause = $where ? 'WHERE '.implode(' AND ',$where) : '';
+    $stmt = $db->prepare("SELECT sd.*,s.student_id as sid,s.first_name,s.last_name,s.photo FROM student_documents sd INNER JOIN students s ON sd.student_id=s.id $wClause ORDER BY s.last_name,s.first_name,sd.uploaded_at DESC");
     $stmt->execute($params);
-    $documents = $stmt->fetchAll();
-    
-    // Get document count by type
-    $countStmt = $db->query("
-        SELECT document_type, COUNT(*) as count 
-        FROM student_documents 
-        GROUP BY document_type
-    ");
-    $docCounts = $countStmt->fetchAll(PDO::FETCH_KEY_PAIR);
-    
-} catch (PDOException $e) {
-    error_log("View documents error: " . $e->getMessage());
-    $documents = [];
-    $docCounts = [];
-}
+    $docs = $stmt->fetchAll();
+    $counts = $db->query("SELECT document_type,COUNT(*) as c FROM student_documents GROUP BY document_type")->fetchAll(PDO::FETCH_KEY_PAIR);
+} catch (PDOException $e) { $docs = []; $counts = []; }
+
+$dtypes  = ['inventory_form'=>'Inventory Form','whodas'=>'WHODAS 2.0','pid5'=>'PID-5','consent_form'=>'Consent Form','other'=>'Other'];
+$dbadges = ['inventory_form'=>'blue','whodas'=>'green','pid5'=>'purple','consent_form'=>'amber','other'=>'gray'];
+$flash   = getFlash();
 ?>
+<div class="dash">
+  <?php require_once __DIR__.'/../includes/admin_sidebar.php'; ?>
+  <div class="main-area">
+    <header class="topbar">
+      <div class="topbar-left"><h2>Student Documents</h2><p>All uploaded documents sorted by student name</p></div>
+    </header>
+    <main class="page-body">
+      <?php if ($flash): ?>
+      <div class="alert <?= $flash['type']==='error'?'error':'success' ?>" style="margin-bottom:20px">
+        <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
+        <span><?= sanitize($flash['message']) ?></span>
+      </div>
+      <?php endif; ?>
 
-<div class="container mt-4">
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <h2><i class="bi bi-files"></i> Student Documents</h2>
-            <p class="text-muted">All uploaded documents sorted by student name</p>
+      <!-- Stats -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px">
+        <?php foreach ([['inventory_form','Inventory Forms','blue'],['whodas','WHODAS 2.0','green'],['pid5','PID-5','purple'],['consent_form','Consent Forms','amber']] as [$k,$lbl,$col]): ?>
+        <div class="stat-card">
+          <div class="stat-icon <?= $col ?>">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          </div>
+          <div><div class="stat-val"><?= $counts[$k] ?? 0 ?></div><div class="stat-lbl"><?= $lbl ?></div></div>
         </div>
-    </div>
+        <?php endforeach; ?>
+      </div>
 
-    <!-- Statistics Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card text-white bg-primary">
-                <div class="card-body">
-                    <h6>Inventory Forms</h6>
-                    <h3><?php echo $docCounts['inventory_form'] ?? 0; ?></h3>
-                </div>
+      <!-- Search & Filter -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-body" style="padding:16px 20px">
+          <form method="GET" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+            <div style="position:relative;flex:1;min-width:200px">
+              <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--gray-400)" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="Search by student name or ID..." class="inp-plain" style="padding-left:38px">
             </div>
+            <select name="doc_type" class="inp-plain" style="width:200px">
+              <option value="">All Document Types</option>
+              <?php foreach ($dtypes as $k => $v): ?>
+              <option value="<?= $k ?>" <?= $docType===$k?'selected':'' ?>><?= $v ?></option>
+              <?php endforeach; ?>
+            </select>
+            <button type="submit" class="btn-main">Filter</button>
+            <?php if ($search || $docType): ?><a href="view_documents.php" class="btn-sm gray">Clear</a><?php endif; ?>
+          </form>
         </div>
-        <div class="col-md-3">
-            <div class="card text-white bg-success">
-                <div class="card-body">
-                    <h6>WHODAS 2.0</h6>
-                    <h3><?php echo $docCounts['whodas'] ?? 0; ?></h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-white bg-info">
-                <div class="card-body">
-                    <h6>PID-5</h6>
-                    <h3><?php echo $docCounts['pid5'] ?? 0; ?></h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-white bg-warning">
-                <div class="card-body">
-                    <h6>Consent Forms</h6>
-                    <h3><?php echo $docCounts['consent_form'] ?? 0; ?></h3>
-                </div>
-            </div>
-        </div>
-    </div>
+      </div>
 
-    <!-- Search and Filter -->
-    <div class="card shadow mb-4">
-        <div class="card-body">
-            <form method="GET" class="row g-3">
-                <div class="col-md-5">
-                    <input type="text" name="search" class="form-control" 
-                           placeholder="Search by student ID or name..." 
-                           value="<?php echo htmlspecialchars($search); ?>">
-                </div>
-                <div class="col-md-4">
-                    <select name="doc_type" class="form-select">
-                        <option value="">All Document Types</option>
-                        <option value="inventory_form" <?php echo $docType === 'inventory_form' ? 'selected' : ''; ?>>Inventory Form</option>
-                        <option value="whodas" <?php echo $docType === 'whodas' ? 'selected' : ''; ?>>WHODAS 2.0</option>
-                        <option value="pid5" <?php echo $docType === 'pid5' ? 'selected' : ''; ?>>PID-5</option>
-                        <option value="consent_form" <?php echo $docType === 'consent_form' ? 'selected' : ''; ?>>Consent Form</option>
-                        <option value="other" <?php echo $docType === 'other' ? 'selected' : ''; ?>>Other</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-search"></i> Search
-                    </button>
-                </div>
-            </form>
-            <?php if (!empty($search) || !empty($docType)): ?>
-            <div class="mt-2">
-                <a href="view_documents.php" class="btn btn-sm btn-secondary">
-                    <i class="bi bi-x"></i> Clear Filters
-                </a>
+      <!-- Table -->
+      <div class="card">
+        <div class="card-header">
+          <h3>
+            <div class="ch-icon" style="background:#e0e7ff;color:#4f46e5">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             </div>
-            <?php endif; ?>
+            Documents (<?= count($docs) ?>)
+          </h3>
         </div>
-    </div>
-
-    <!-- Documents Table -->
-    <div class="card shadow">
-        <div class="card-body">
-            <?php if (empty($documents)): ?>
-            <div class="text-center py-5">
-                <i class="bi bi-inbox" style="font-size: 4rem; color: #ccc;"></i>
-                <p class="text-muted mt-3">No documents found.</p>
-            </div>
-            <?php else: ?>
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Student ID</th>
-                            <th>Student Name</th>
-                            <th>Document Type</th>
-                            <th>File Name</th>
-                            <th>Upload Date</th>
-                            <th>Size</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php 
-                        $currentStudent = '';
-                        foreach ($documents as $doc): 
-                            $studentName = $doc['last_name'] . ', ' . $doc['first_name'];
-                            if (!empty($doc['middle_name'])) {
-                                $studentName .= ' ' . substr($doc['middle_name'], 0, 1) . '.';
-                            }
-                            
-                            // Highlight row if new student
-                            $isNewStudent = ($currentStudent !== $doc['student_id']);
-                            $currentStudent = $doc['student_id'];
-                        ?>
-                        <tr <?php echo $isNewStudent ? 'class="table-primary"' : ''; ?>>
-                            <td><strong><?php echo htmlspecialchars($doc['student_id']); ?></strong></td>
-                            <td><strong><?php echo htmlspecialchars($studentName); ?></strong></td>
-                            <td>
-                                <?php
-                                $types = [
-                                    'inventory_form' => '<span class="badge bg-primary">Inventory Form</span>',
-                                    'whodas' => '<span class="badge bg-success">WHODAS 2.0</span>',
-                                    'pid5' => '<span class="badge bg-info">PID-5</span>',
-                                    'consent_form' => '<span class="badge bg-warning text-dark">Consent Form</span>',
-                                    'other' => '<span class="badge bg-secondary">Other</span>'
-                                ];
-                                echo $types[$doc['document_type']] ?? 'Unknown';
-                                ?>
-                            </td>
-                            <td><?php echo htmlspecialchars($doc['document_name']); ?></td>
-                            <td><?php echo date('M d, Y h:i A', strtotime($doc['uploaded_at'])); ?></td>
-                            <td><?php echo number_format($doc['file_size'] / 1024, 2); ?> KB</td>
-                            <td>
-                                <a href="../uploads/documents/<?php echo htmlspecialchars($doc['file_path']); ?>" 
-                                   class="btn btn-sm btn-primary" target="_blank" title="View">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                                <a href="../process/admin_delete_document.php?id=<?php echo $doc['id']; ?>" 
-                                   class="btn btn-sm btn-danger" title="Delete"
-                                   onclick="return confirm('Are you sure you want to delete this document?');">
-                                    <i class="bi bi-trash"></i>
-                                </a>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-            <?php endif; ?>
+        <?php if (empty($docs)): ?>
+        <div class="empty-state">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          <h4>No documents found</h4>
+          <p>Students haven't uploaded any documents yet</p>
         </div>
-    </div>
+        <?php else: ?>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th>Student</th><th>Student ID</th><th>Document Type</th><th>File Name</th><th>Upload Date</th><th>Size</th><th>Actions</th></tr></thead>
+            <tbody>
+              <?php $prev = ''; foreach ($docs as $d):
+                $isNew = $prev !== $d['sid']; $prev = $d['sid'];
+              ?>
+              <tr <?= $isNew ? 'style="background:#f8faff"' : '' ?>>
+                <td>
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <?php if (!empty($d['photo']) && file_exists(UPLOAD_PATH.$d['photo'])): ?>
+                    <img src="../uploads/<?= htmlspecialchars($d['photo']) ?>" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid var(--gray-200)">
+                    <?php else: ?>
+                    <div style="width:36px;height:36px;border-radius:50%;background:var(--primary-light);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700"><?= strtoupper(substr($d['first_name'],0,1).substr($d['last_name'],0,1)) ?></div>
+                    <?php endif; ?>
+                    <span style="font-weight:600;color:var(--gray-900)"><?= htmlspecialchars($d['last_name'].', '.$d['first_name']) ?></span>
+                  </div>
+                </td>
+                <td style="color:var(--gray-500);font-size:.82rem"><?= htmlspecialchars($d['sid']) ?></td>
+                <td><span class="badge <?= $dbadges[$d['document_type']] ?? 'gray' ?>"><?= $dtypes[$d['document_type']] ?? 'Document' ?></span></td>
+                <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.82rem"><?= htmlspecialchars($d['document_name']) ?></td>
+                <td style="color:var(--gray-500);font-size:.82rem"><?= date('M d, Y h:i A', strtotime($d['uploaded_at'])) ?></td>
+                <td style="color:var(--gray-500);font-size:.82rem"><?= number_format($d['file_size']/1024,1) ?> KB</td>
+                <td>
+                  <div style="display:flex;gap:6px">
+                    <a href="../uploads/documents/<?= htmlspecialchars($d['file_path']) ?>" target="_blank" class="btn-sm blue">
+                      <svg style="width:13px;height:13px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                      View
+                    </a>
+                    <a href="../process/admin_delete_document.php?id=<?= $d['id'] ?>" class="btn-sm red" onclick="return confirm('Delete this document?')">
+                      <svg style="width:13px;height:13px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                      Delete
+                    </a>
+                  </div>
+                </td>
+              </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+        <?php endif; ?>
+      </div>
+    </main>
+  </div>
 </div>
-
-<?php require_once __DIR__ . '/../includes/footer.php'; ?>
+<?php require_once __DIR__.'/../includes/footer.php'; ?>

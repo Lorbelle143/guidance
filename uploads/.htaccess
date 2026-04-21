@@ -4,8 +4,7 @@
     Deny from all
 </FilesMatch>
 
-# Allow only image files
-<FilesMatch "\.(jpg|jpeg|png|gif)$">
-    Order Allow,Deny
-    Allow from all
+# Prevent PHP execution (newer Apache / InfinityFree)
+<FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|cgi|sh)$">
+    Require all denied
 </FilesMatch>

@@ -95,7 +95,24 @@ try {
             $file['size'],
             $notes
         ]);
-        
+
+        // ── Notify admin of new document upload ──────────────────────────────
+        require_once __DIR__.'/../includes/notifications.php';
+        $stInfo = $db->prepare("SELECT first_name, last_name, student_id FROM students WHERE id=?");
+        $stInfo->execute([$_SESSION['student_id']]);
+        $stRow = $stInfo->fetch();
+        $dtypes = ['inventory_form'=>'Inventory Form','whodas'=>'WHODAS 2.0','pid5'=>'PID-5','consent_form'=>'Consent Form','other'=>'Other'];
+        $dtLabel = $dtypes[$document_type] ?? 'Document';
+        createNotification(
+            $db,
+            'student_activity',
+            $_SESSION['student_id'],
+            'New Document Uploaded',
+            ($stRow['first_name'].' '.$stRow['last_name'].' ('.$stRow['student_id'].') uploaded a '.$dtLabel.'.'),
+            null,
+            '../admin/view_documents.php'
+        );
+
         setFlash('success', 'Document uploaded successfully!');
         redirect('../student/upload_document.php');
     } else {

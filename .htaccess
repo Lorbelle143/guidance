@@ -1,58 +1,65 @@
-# Apache Configuration for Guidance Office System
+# NBSC GCO — Apache Configuration
+# Compatible with: XAMPP (localhost) and InfinityFree shared hosting
 
-# Enable Rewrite Engine
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteBase /
-    
-    # Redirect to HTTPS (uncomment in production with SSL)
-    # RewriteCond %{HTTPS} off
-    # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-</IfModule>
-
-# Prevent directory listing
+# ── Directory listing ─────────────────────────────────────────────────────────
 Options -Indexes
 
-# Protect sensitive files
-<FilesMatch "^\.env|^\.git|composer\.(json|lock)|package\.json|README\.md|SECURITY\.md">
+# ── Protect sensitive files ───────────────────────────────────────────────────
+<FilesMatch "(^\.env|env\.php|composer\.(json|lock)|package\.json|README\.md)">
     Order Allow,Deny
     Deny from all
 </FilesMatch>
 
-# Security Headers
+# ── Rewrite engine ────────────────────────────────────────────────────────────
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Force HTTPS on production (InfinityFree provides HTTPS)
+    # Uncomment the two lines below once your domain is live:
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+# ── Security headers (only where mod_headers is available) ────────────────────
 <IfModule mod_headers.c>
     Header set X-Content-Type-Options "nosniff"
     Header set X-Frame-Options "SAMEORIGIN"
     Header set X-XSS-Protection "1; mode=block"
     Header set Referrer-Policy "strict-origin-when-cross-origin"
-    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
 </IfModule>
 
-# PHP Security Settings
-<IfModule mod_php7.c>
+# ── PHP settings (mod_php — works on XAMPP; skipped silently on InfinityFree) ─
+<IfModule mod_php8.c>
     php_flag display_errors Off
     php_flag log_errors On
-    php_value error_log /var/log/php_errors.log
     php_value upload_max_filesize 5M
     php_value post_max_size 6M
     php_value max_execution_time 30
     php_value session.cookie_httponly 1
-    php_value session.cookie_secure 0
+    php_value session.use_only_cookies 1
+</IfModule>
+<IfModule mod_php7.c>
+    php_flag display_errors Off
+    php_flag log_errors On
+    php_value upload_max_filesize 5M
+    php_value post_max_size 6M
+    php_value max_execution_time 30
+    php_value session.cookie_httponly 1
     php_value session.use_only_cookies 1
 </IfModule>
 
-# Compression
+# ── Compression ───────────────────────────────────────────────────────────────
 <IfModule mod_deflate.c>
-    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/javascript application/javascript
 </IfModule>
 
-# Browser Caching
+# ── Browser caching ───────────────────────────────────────────────────────────
 <IfModule mod_expires.c>
     ExpiresActive On
-    ExpiresByType image/jpg "access plus 1 year"
     ExpiresByType image/jpeg "access plus 1 year"
-    ExpiresByType image/gif "access plus 1 year"
-    ExpiresByType image/png "access plus 1 year"
-    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType image/png  "access plus 1 year"
+    ExpiresByType image/gif  "access plus 1 year"
+    ExpiresByType text/css              "access plus 1 month"
     ExpiresByType application/javascript "access plus 1 month"
 </IfModule>

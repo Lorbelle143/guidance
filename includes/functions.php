@@ -75,9 +75,9 @@ function isAuthenticated() {
 function requireAuth() {
     if (!isAuthenticated()) {
         if (isStudent()) {
-            redirect('../auth/student_login.php');
+            redirect('../auth/login.php');
         } else {
-            redirect('../auth/admin_login.php');
+            redirect('../auth/login.php');
         }
     }
     
@@ -176,7 +176,7 @@ function isAdmin() {
 function requireAdmin() {
     if (!isAuthenticated()) {
         setFlash('error', 'Please login to access this page.');
-        redirect('../auth/admin_login.php');
+        redirect('../auth/login.php');
     }
     
     if (!isAdmin()) {
@@ -198,7 +198,7 @@ function isStudent() {
 function requireStudent() {
     if (!isAuthenticated() || !isStudent()) {
         setFlash('error', 'Access denied. Student login required.');
-        redirect('../auth/student_login.php');
+        redirect('../auth/login.php');
     }
 }
 

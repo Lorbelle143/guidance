@@ -66,10 +66,8 @@ if (!empty($email) && !validateEmail($email)) {
     $errors[] = "Invalid email format.";
 }
 
-// Validate file upload
-if (!isset($_FILES['photo']) || $_FILES['photo']['error'] === UPLOAD_ERR_NO_FILE) {
-    $errors[] = "Photo is required.";
-} else {
+// Validate file upload (optional — skip if not provided)
+if (isset($_FILES['photo']) && $_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
     $fileErrors = validateFileUpload($_FILES['photo']);
     if (!empty($fileErrors)) {
         $errors = array_merge($errors, $fileErrors);
@@ -105,25 +103,26 @@ try {
         }
     }
     
-    // Upload file
-    $uploadResult = uploadFile($_FILES['photo']);
-    
-    if (!$uploadResult['success']) {
-        setFlash('error', implode('<br>', $uploadResult['errors']));
-        redirect('student_register.php');
+    // Upload photo if provided
+    $filename = null;
+    if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
+        $uploadResult = uploadFile($_FILES['photo']);
+        if (!$uploadResult['success']) {
+            setFlash('error', implode('<br>', $uploadResult['errors']));
+            redirect('student_register.php');
+        }
+        $filename = $uploadResult['filename'];
     }
-    
-    $filename = $uploadResult['filename'];
-    
+
     // Hash password
     $hashedPassword = hashPassword($password);
-    
+
     // Insert student record
     $stmt = $db->prepare("
-        INSERT INTO students (student_id, password, last_name, first_name, middle_name, email, photo, is_active, created_at) 
+        INSERT INTO students (student_id, password, last_name, first_name, middle_name, email, photo, is_active, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW())
     ");
-    
+
     $stmt->execute([
         $student_id,
         $hashedPassword,
@@ -135,7 +134,7 @@ try {
     ]);
     
     setFlash('success', 'Registration successful! You can now login with your Student ID and password.');
-    redirect('student_login.php');
+    redirect('login.php');
     
 } catch (PDOException $e) {
     error_log("Student registration error: " . $e->getMessage());
